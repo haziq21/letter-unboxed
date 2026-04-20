@@ -1,15 +1,19 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { createEventDispatcher, onMount } from 'svelte';
   import { arrEq, debounce } from '$lib/utils';
-  import { refSet, refMap } from '$lib/actions';
+  import { refMap } from '$lib/actions';
 
   interface Props {
     puzzles: { date: Date; solutions: string[][] }[];
     selected?: { solution: string[]; date: Date };
+    hasMore?: boolean;
+    loading?: boolean;
     class: string | undefined;
   }
 
-  let { puzzles, selected = $bindable(), class: cls = '' }: Props = $props();
+  let { puzzles, selected = $bindable(), hasMore = false, loading = false, class: cls = '' }: Props =
+    $props();
+  const dispatch = createEventDispatcher<{ loadmore: void }>();
 
   /** The scrollable element containing the solutions. */
   let solScrollerElem: HTMLElement;
@@ -24,6 +28,20 @@
   const solElemData = new Map<HTMLElement, { solution: string[]; date: Date }>();
   /** The result of the `(pointer: fine)` media query. */
   let hasFinePointer = $state(true);
+  /** Bottom sentinel used to auto-load more puzzles. */
+  let loadMoreSentinelElem: HTMLElement;
+  /** Observer used to update visible solution elements. */
+  let visibleSolutionsObserver: IntersectionObserver | undefined;
+
+  function observeSolution(node: HTMLElement) {
+    visibleSolutionsObserver?.observe(node);
+    return {
+      destroy() {
+        visibleSolElems.delete(node);
+        visibleSolutionsObserver?.unobserve(node);
+      }
+    };
+  }
 
   onMount(() => {
     // Update `hasFinePointer` based on the media query
@@ -32,19 +50,32 @@
     pointerMediaQuery.addEventListener('change', (e) => (hasFinePointer = e.matches));
 
     // IntersectionObserver to maintain `visibleSolElems` for efficient updating of `selectedSolElem`
-    const observer = new IntersectionObserver(
+    visibleSolutionsObserver = new IntersectionObserver(
       (entries) => hasFinePointer || updateVisibleSolutions(entries, visibleSolElems),
       { root: solScrollerElem, rootMargin: '0px', threshold: 1 }
     );
-    visibleSolElems.forEach((el) => observer.observe(el));
+    for (const el of solElemData.keys()) visibleSolutionsObserver.observe(el);
+
+    const loadMoreObserver = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting) || !hasMore || loading) return;
+        dispatch('loadmore');
+      },
+      { root: solScrollerElem, rootMargin: '0px', threshold: 0.1 }
+    );
+    if (loadMoreSentinelElem) loadMoreObserver.observe(loadMoreSentinelElem);
 
     selectedSolElem = hasFinePointer
       ? // If the user is on desktop, default to the first solution
         solElemData.keys().next().value!
       : // If the user is on mobile, select the solution selected by the solution selector
-        getSelectedSolution(visibleSolElems, solSelectorElem)!;
-    if (!selectedSolElem) return;
-    selected = solElemData.get(selectedSolElem)!;
+        getSelectedSolution(visibleSolElems, solSelectorElem)! || solElemData.keys().next().value!;
+    if (selectedSolElem) selected = solElemData.get(selectedSolElem)!;
+
+    return () => {
+      visibleSolutionsObserver?.disconnect();
+      loadMoreObserver.disconnect();
+    };
   });
 
   const debouncedSnapSolScroller = debounce(
@@ -149,7 +180,7 @@
           {#each solutions as solution}
             <li class="not-first:-mt-1.5">
               <button
-                use:refSet={visibleSolElems}
+                use:observeSolution
                 use:refMap={{ map: solElemData, value: { solution, date, ...rest } }}
                 {onmouseenter}
                 {onmouseleave}
@@ -171,5 +202,8 @@
         </ul>
       </div>
     {/each}
+    {#if hasMore}
+      <div bind:this={loadMoreSentinelElem} class="h-8"></div>
+    {/if}
   </div>
 </div>

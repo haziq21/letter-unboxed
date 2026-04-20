@@ -1,11 +1,48 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import GithubIcon from './GithubIcon.svelte';
   import BoxDiagram from './BoxDiagram.svelte';
   import SolutionList from './SolutionList.svelte';
   import type { PageProps } from './$types';
 
   const { data }: PageProps = $props();
+  let puzzles = $state(data.puzzles);
+  let definitions = $state(data.definitions);
+  let page = $state(data.page);
+  let hasMore = $state(data.hasMore);
+  let loadingMore = $state(false);
   let selected: { date: Date; sides: string[]; solution: string[] } | undefined = $state();
+
+  async function loadMore() {
+    if (loadingMore || !hasMore) return;
+    loadingMore = true;
+
+    try {
+      const res = await fetch(`/puzzles?page=${page + 1}`);
+      if (!res.ok) return;
+
+      const next: {
+        puzzles: { date: string; sides: string[]; solutions: string[][] }[];
+        definitions: Record<string, string>;
+        page: number;
+        hasMore: boolean;
+      } = await res.json();
+
+      puzzles = [
+        ...puzzles,
+        ...next.puzzles.map((puzzle) => ({ ...puzzle, date: new Date(puzzle.date) }))
+      ];
+      definitions = new Map([...definitions, ...Object.entries(next.definitions)]);
+      page = next.page;
+      hasMore = next.hasMore;
+    } finally {
+      loadingMore = false;
+    }
+  }
+
+  onMount(() => {
+    void loadMore();
+  });
 </script>
 
 <svelte:head>
@@ -45,10 +82,10 @@
       class="text-2xs mt-2 mb-3 flex h-8 w-full flex-col justify-end md:w-75 lg:w-100 lg:text-xs"
     >
       {#each selected?.solution ?? [] as word}
-        {#if data.definitions.has(word)}
+        {#if definitions.has(word)}
           <p>
             <span class="mr-3 font-semibold">{word}</span>
-            <span>{data.definitions.get(word)}</span>
+            <span>{definitions.get(word)}</span>
           </p>
         {/if}
       {/each}
@@ -56,24 +93,13 @@
   </div>
 
   <main class="min-h-0 flex-1">
-    <div class="flex items-center justify-between px-8 py-3 text-xs md:px-10 md:text-sm">
-      <a
-        href={data.page > 1 ? `/?page=${data.page - 1}` : undefined}
-        class={['font-semibold underline', data.page > 1 ? '' : 'pointer-events-none opacity-40']}
-      >
-        Previous
-      </a>
-      <span>Page {data.page} of {data.totalPages}</span>
-      <a
-        href={data.page < data.totalPages ? `/?page=${data.page + 1}` : undefined}
-        class={[
-          'font-semibold underline',
-          data.page < data.totalPages ? '' : 'pointer-events-none opacity-40'
-        ]}
-      >
-        Next
-      </a>
-    </div>
-    <SolutionList puzzles={data.puzzles} bind:selected class="flex max-h-full flex-col" />
+    <SolutionList
+      {puzzles}
+      {hasMore}
+      loading={loadingMore}
+      on:loadmore={loadMore}
+      bind:selected
+      class="flex max-h-full flex-col"
+    />
   </main>
 </div>
