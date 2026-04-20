@@ -11,8 +11,13 @@
     class: string | undefined;
   }
 
-  let { puzzles, selected = $bindable(), hasMore = false, loading = false, class: cls = '' }: Props =
-    $props();
+  let {
+    puzzles,
+    selected = $bindable(),
+    hasMore = false,
+    loading = false,
+    class: cls = ''
+  }: Props = $props();
   const dispatch = createEventDispatcher<{ loadmore: void }>();
 
   /** The scrollable element containing the solutions. */
@@ -29,7 +34,7 @@
   /** The result of the `(pointer: fine)` media query. */
   let hasFinePointer = $state(true);
   /** Bottom sentinel used to auto-load more puzzles. */
-  let loadMoreSentinelElem: HTMLElement;
+  let loadMoreSentinelElem: HTMLElement | undefined = $state();
   /** Observer used to update visible solution elements. */
   let visibleSolutionsObserver: IntersectionObserver | undefined;
 
@@ -41,6 +46,11 @@
         visibleSolutionsObserver?.unobserve(node);
       }
     };
+  }
+
+  function getFirstSolutionElement(): HTMLElement | undefined {
+    const first = solElemData.keys().next();
+    return first.done ? undefined : first.value;
   }
 
   onMount(() => {
@@ -67,9 +77,9 @@
 
     selectedSolElem = hasFinePointer
       ? // If the user is on desktop, default to the first solution
-        solElemData.keys().next().value!
+        getFirstSolutionElement()
       : // If the user is on mobile, select the solution selected by the solution selector
-        getSelectedSolution(visibleSolElems, solSelectorElem)! || solElemData.keys().next().value!;
+        getSelectedSolution(visibleSolElems, solSelectorElem) || getFirstSolutionElement();
     if (selectedSolElem) selected = solElemData.get(selectedSolElem)!;
 
     return () => {

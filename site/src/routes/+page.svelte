@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import GithubIcon from './GithubIcon.svelte';
   import BoxDiagram from './BoxDiagram.svelte';
   import SolutionList from './SolutionList.svelte';
@@ -7,7 +6,7 @@
 
   const { data }: PageProps = $props();
   let puzzles = $state(data.puzzles);
-  let definitions = $state(data.definitions);
+  let definitions = $state<Map<string, string>>(data.definitions);
   let page = $state(data.page);
   let hasMore = $state(data.hasMore);
   let loadingMore = $state(false);
@@ -19,7 +18,10 @@
 
     try {
       const res = await fetch(`/puzzles?page=${page + 1}`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        console.error(`Failed to load more puzzles: HTTP ${res.status}`);
+        return;
+      }
 
       const next: {
         puzzles: { date: string; sides: string[]; solutions: string[][] }[];
@@ -32,17 +34,19 @@
         ...puzzles,
         ...next.puzzles.map((puzzle) => ({ ...puzzle, date: new Date(puzzle.date) }))
       ];
-      definitions = new Map([...definitions, ...Object.entries(next.definitions)]);
+      const nextDefinitions = new Map(definitions);
+      for (const [word, definition] of Object.entries(next.definitions)) {
+        nextDefinitions.set(word, definition);
+      }
+      definitions = nextDefinitions;
       page = next.page;
       hasMore = next.hasMore;
+    } catch (error) {
+      console.error('Failed to load more puzzles', error);
     } finally {
       loadingMore = false;
     }
   }
-
-  onMount(() => {
-    void loadMore();
-  });
 </script>
 
 <svelte:head>

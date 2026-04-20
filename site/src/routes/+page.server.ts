@@ -1,7 +1,6 @@
 import { getDefinitions, getPuzzleCount, getPuzzles } from '$lib/server/database';
+import { PUZZLES_PAGE_SIZE } from '$lib/server/pagination';
 import type { PageServerLoad } from './$types';
-
-const PAGE_SIZE = 31;
 
 export const load: PageServerLoad = async () => {
   const now = new Date();
@@ -9,11 +8,11 @@ export const load: PageServerLoad = async () => {
   const page = 1;
 
   const totalPuzzles = await getPuzzleCount({ maxDate });
-  const totalPages = Math.max(1, Math.ceil(totalPuzzles / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalPuzzles / PUZZLES_PAGE_SIZE));
   const puzzles = await getPuzzles({
     maxDate,
-    limit: PAGE_SIZE,
-    offset: (page - 1) * PAGE_SIZE
+    limit: PUZZLES_PAGE_SIZE,
+    offset: (page - 1) * PUZZLES_PAGE_SIZE
   });
   const words = [...new Set(puzzles.flatMap(({ solutions }) => solutions.flat()))];
   const definitions = await getDefinitions(words);
