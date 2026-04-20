@@ -43,6 +43,7 @@
         solElemData.keys().next().value!
       : // If the user is on mobile, select the solution selected by the solution selector
         getSelectedSolution(visibleSolElems, solSelectorElem)!;
+    if (!selectedSolElem) return;
     selected = solElemData.get(selectedSolElem)!;
   });
 

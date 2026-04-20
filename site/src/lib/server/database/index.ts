@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/neon-http';
 import { DATABASE_URL } from '$env/static/private';
 import { dictionary, puzzles } from './schema';
-import { desc, eq, lte, sql } from 'drizzle-orm';
+import { desc, eq, inArray, lte, sql } from 'drizzle-orm';
 
 const db = drizzle(DATABASE_URL);
 
@@ -25,32 +25,43 @@ export async function upsertDefinitions(definitions: Record<string, string>) {
 
 export async function getPuzzles(options?: {
   maxDate?: Date;
+  limit?: number;
+  offset?: number;
 }): Promise<{ date: Date; sides: string[]; solutions: string[][] }[]> {
-  if (!options?.maxDate) {
-    return await db.select().from(puzzles).orderBy(desc(puzzles.date));
+  const query = db.select().from(puzzles).$dynamic();
+
+  if (options?.maxDate) {
+    query.where(lte(puzzles.date, options.maxDate));
   }
-  return await db
-    .select()
-    .from(puzzles)
-    .where(lte(puzzles.date, options.maxDate))
-    .orderBy(desc(puzzles.date));
+  query.orderBy(desc(puzzles.date));
+
+  if (options?.offset !== undefined) {
+    query.offset(options.offset);
+  }
+  if (options?.limit !== undefined) {
+    query.limit(options.limit);
+  }
+
+  return await query;
 }
 
-export async function getDefinitions(options?: { maxDate?: Date }): Promise<Map<string, string>> {
-  let defs: { word: string; definition: string }[];
-  if (!options?.maxDate) {
-    defs = await db.select().from(dictionary);
-  } else {
-    defs = await db
-      .selectDistinct({
-        word: sql<string>`word.word`,
-        definition: dictionary.definition
-      })
-      .from(puzzles)
-      .crossJoinLateral(sql`unnest(${puzzles.solutions}) as word`)
-      .innerJoin(dictionary, eq(sql`word.word`, dictionary.word))
-      .where(lte(puzzles.date, options.maxDate));
-  }
+export async function getPuzzleCount(options?: { maxDate?: Date }): Promise<number> {
+  const [{ count }] = options?.maxDate
+    ? await db
+        .select({ count: sql<number>`count(*)` })
+        .from(puzzles)
+        .where(lte(puzzles.date, options.maxDate))
+    : await db.select({ count: sql<number>`count(*)` }).from(puzzles);
 
+  return Number(count);
+}
+
+export async function getDefinitions(words: string[]): Promise<Map<string, string>> {
+  if (words.length === 0) return new Map();
+
+  const defs = await db
+    .select({ word: dictionary.word, definition: dictionary.definition })
+    .from(dictionary)
+    .where(inArray(dictionary.word, words));
   return new Map(defs.map(({ word, definition }) => [word, definition]));
 }

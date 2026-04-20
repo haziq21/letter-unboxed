@@ -56,6 +56,27 @@
   </div>
 
   <main class="min-h-0 flex-1">
+    <div class="flex items-center justify-between px-8 py-3 text-xs md:px-10 md:text-sm">
+      <a
+        href={data.page > 1 ? `/?page=${data.page - 1}` : undefined}
+        class={[
+          'font-semibold underline',
+          data.page > 1 ? '' : 'pointer-events-none opacity-40'
+        ]}
+      >
+        Previous
+      </a>
+      <span>Page {data.page} of {data.totalPages}</span>
+      <a
+        href={data.page < data.totalPages ? `/?page=${data.page + 1}` : undefined}
+        class={[
+          'font-semibold underline',
+          data.page < data.totalPages ? '' : 'pointer-events-none opacity-40'
+        ]}
+      >
+        Next
+      </a>
+    </div>
     <SolutionList puzzles={data.puzzles} bind:selected class="flex max-h-full flex-col" />
   </main>
 </div>
