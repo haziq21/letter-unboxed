@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/neon-http';
 import { DATABASE_URL } from '$env/static/private';
 import { dictionary, puzzles } from './schema';
-import { desc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { desc, inArray, lte, sql } from 'drizzle-orm';
 
 const db = drizzle(DATABASE_URL);
 

@@ -33,7 +33,7 @@
   </header>
 
   <div
-    class="min-h-90 flex flex-col items-center justify-center bg-rose-300 px-8 md:row-span-2 md:h-full"
+    class="flex min-h-90 flex-col items-center justify-center bg-rose-300 px-8 md:row-span-2 md:h-full"
   >
     <BoxDiagram
       sides={selected?.sides ?? Array(4).fill('')}
@@ -42,7 +42,7 @@
     />
 
     <div
-      class="md:w-75 lg:w-100 text-2xs mb-3 mt-2 flex h-8 w-full flex-col justify-end lg:text-xs"
+      class="text-2xs mt-2 mb-3 flex h-8 w-full flex-col justify-end md:w-75 lg:w-100 lg:text-xs"
     >
       {#each selected?.solution ?? [] as word}
         {#if data.definitions.has(word)}
@@ -59,10 +59,7 @@
     <div class="flex items-center justify-between px-8 py-3 text-xs md:px-10 md:text-sm">
       <a
         href={data.page > 1 ? `/?page=${data.page - 1}` : undefined}
-        class={[
-          'font-semibold underline',
-          data.page > 1 ? '' : 'pointer-events-none opacity-40'
-        ]}
+        class={['font-semibold underline', data.page > 1 ? '' : 'pointer-events-none opacity-40']}
       >
         Previous
       </a>

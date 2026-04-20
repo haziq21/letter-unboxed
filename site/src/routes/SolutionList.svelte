@@ -134,7 +134,7 @@
 <div class={['relative', cls]}>
   <div
     bind:this={solSelectorElem}
-    class="pointer-fine:hidden -z-1 absolute left-4 right-4 top-14 h-9 bg-rose-100 md:hidden"
+    class="absolute top-14 right-4 left-4 -z-1 h-9 bg-rose-100 md:hidden pointer-fine:hidden"
   ></div>
 
   <div bind:this={solScrollerElem} {onscroll} class="overflow-y-scroll">
@@ -160,7 +160,7 @@
                   selectedSolElem &&
                   // "if this <button> is the selected solution"
                   arrEq(solution, solElemData.get(selectedSolElem)!.solution)
-                    ? 'z-1 relative bg-rose-100'
+                    ? 'relative z-1 bg-rose-100'
                     : 'pointer-fine:hover:bg-rose-50'
                 ]}
               >
