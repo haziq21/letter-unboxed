@@ -34,11 +34,9 @@
         ...puzzles,
         ...next.puzzles.map((puzzle) => ({ ...puzzle, date: new Date(puzzle.date) }))
       ];
-      const nextDefinitions = new Map(definitions);
       for (const [word, definition] of Object.entries(next.definitions)) {
-        nextDefinitions.set(word, definition);
+        definitions.set(word, definition);
       }
-      definitions = nextDefinitions;
       page = next.page;
       hasMore = next.hasMore;
     } catch (error) {
