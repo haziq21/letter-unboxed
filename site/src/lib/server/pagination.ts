@@ -2,10 +2,9 @@ import { getDefinitions, getPuzzleCount, getPuzzles } from '$lib/server/database
 
 export const PUZZLES_PAGE_SIZE = 31;
 
-export async function getPaginatedPuzzlesPage(options?: { requestedPage?: number; now?: Date }) {
-  const now = options?.now ?? new Date();
+export async function getPaginatedPuzzlesPage(requestedPage = 1) {
+  const now = new Date();
   const maxDate = new Date(now.getTime() - (now.getUTCHours() < 7 ? 2 : 1) * 24 * 60 * 60 * 1000);
-  const requestedPage = options?.requestedPage ?? 1;
 
   const totalPuzzles = await getPuzzleCount({ maxDate });
   const totalPages = Math.max(1, Math.ceil(totalPuzzles / PUZZLES_PAGE_SIZE));

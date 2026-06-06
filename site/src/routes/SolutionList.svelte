@@ -213,7 +213,14 @@
       </div>
     {/each}
     {#if hasMore}
-      <div bind:this={loadMoreSentinelElem} class="h-8"></div>
+      <div bind:this={loadMoreSentinelElem} class="flex h-8 items-center justify-center">
+        {#if loading}
+          <span
+            aria-label="Loading more puzzles"
+            class="h-4 w-4 animate-spin rounded-full border-2 border-rose-300 border-t-rose-700"
+          ></span>
+        {/if}
+      </div>
     {/if}
   </div>
 </div>
